@@ -1,0 +1,27 @@
+name: Bump Homebrew Formula
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  homebrew:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update Homebrew formula
+        uses: mislav/bump-homebrew-formula-action@v3
+        with:
+          # The name of the formula to update
+          formula-name: commands-time-tracker
+          # The repository where the formula lives
+          homebrew-tap: ThiagoEvoa/homebrew-tap
+          # The tag to use (usually the latest git tag or commit)
+          base-branch: main
+          download-url: https://github.com/ThiagoEvoa/commands_time_tracker/archive/v1.0.0.tar.gz
+        env:
+          COMMITTER_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
