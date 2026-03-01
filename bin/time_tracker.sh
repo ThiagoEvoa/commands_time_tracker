@@ -37,9 +37,16 @@ precmd_track_metrics() {
 
         local display_cmd=${_LAST_CMD:0:30}
         
+        local header="TIMESTAMP           | COMMAND                        | STATUS  | DURATION"
         if [[ ! -f "$LOG_FILE" ]]; then
-            echo "TIMESTAMP           | COMMAND                        | STATUS  | DURATION" > "$LOG_FILE"
+            echo "$header" > "$LOG_FILE"
             echo "--------------------------------------------------------------------------" >> "$LOG_FILE"
+        elif [[ "$(head -n 1 "$LOG_FILE")" != "$header" ]]; then
+            local temp_log=$(mktemp)
+            echo "$header" > "$temp_log"
+            echo "--------------------------------------------------------------------------" >> "$temp_log"
+            cat "$LOG_FILE" >> "$temp_log"
+            mv "$temp_log" "$LOG_FILE"
         fi
         
         printf "%-19s | %-30s | %-7s | %s\n" \
