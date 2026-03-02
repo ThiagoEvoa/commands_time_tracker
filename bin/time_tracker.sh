@@ -3,7 +3,6 @@ zmodload zsh/datetime
 LOG_FILE="$HOME/track_build_metrics.txt"
 DATE_FORMAT="%Y-%m-%d %H:%M:%S"
 
-
 format_time() {
   local -i total=$(( $1 + 0.5 )) 
 
@@ -21,8 +20,17 @@ format_time() {
 }
 
 preexec_track_metrics() {
-  _STEP_START=$EPOCHREALTIME
-  _LAST_CMD="$1"
+  # 1. Capture the command being executed
+  local cmd="$1"
+
+  # 2. Filter: Only proceed if it contains keywords
+  if [[ "$cmd" =~ (flutter|dart|make|pod|gradle|cache) ]]; then
+    _TRACK_CMD="$cmd"
+    _STEP_START=$EPOCHREALTIME
+  else
+    unset _TRACK_CMD
+    unset _STEP_START
+  fi
 }
 
 
@@ -31,18 +39,24 @@ precmd_track_metrics() {
   local exit_code=$?
 
   if [[ $local_repo == "" ]]; then
+    unset _TRACK_CMD
+    unset _STEP_START
     return
   fi
 
-  if [[ -n "$_LAST_CMD" && -n "$_STEP_START" ]]; then
+  # If _TRACK_CMD exists, it means the previous command was tracked
+  if [[ -n "$_TRACK_CMD" && -n "$_STEP_START" ]]; then
     local end_step=$EPOCHREALTIME
     local duration_raw=$(( end_step - _STEP_START ))
     local duration_pretty=$(format_time $duration_raw)
+
+    # Check status of the previous command
     local cmd_status="SUCCESS"
     [[ $exit_code -ne 0 ]] && cmd_status="FAILED"
 
     local display_cmd=${_LAST_CMD:0:30}
 
+    # Ensure header exists
     local table_columns="| %-19s | %-30s | %-7s | %8s | %-60s |\n"
     local -a table_headers=("TIMESTAMP" "COMMAND" "STATUS" "DURATION" "REPO")
 
@@ -68,7 +82,7 @@ precmd_track_metrics() {
       "$duration_pretty" \
       "$local_repo">> "$LOG_FILE"
 
-    unset _LAST_CMD
+    unset _TRACK_CMD
     unset _STEP_START
   fi
 }
