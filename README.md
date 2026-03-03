@@ -20,6 +20,15 @@ source $(brew --prefix commands-time-tracker)/share/commands-time-tracker/time_t
 export TK_REPOS=("https://..." "git@...")
 ```
 
+Directory Filtering (Optional)
+
+You can restrict the tracker to only log commands executed within a specific project folder. Add the following environment variable to your .zshrc:
+
+```bash
+# Only track commands when the terminal path contains this folder name
+export TRACK_FOLDER="my-project-name"
+```
+
 ## Configuration
 
 The tool supports automatic generation of weekly summaries. You can enable this by adding a cron job to your system.

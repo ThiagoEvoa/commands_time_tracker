@@ -1,24 +1,32 @@
-zmodload zsh/datetime
+# ==============================================================================
+# Zsh Command Tracking Script
+# Logs execution duration and success/failure status of development commands
+# to a specified file.
+# ==============================================================================
+
+zmodload zsh/datetime # Required for high-precision time tracking
 
 LOG_FILE="$HOME/track_build_metrics.txt"
 DATE_FORMAT="%Y-%m-%d %H:%M:%S"
 
+# Converts raw float duration (seconds) into human-readable HHh MMm SSs
 format_time() {
-  local -i total=$(( $1 + 0.5 )) 
+  local -i total=$(($1 + 0.5))
 
-  local h=$(( total / 3600 ))
-  local m=$(( (total % 3600) / 60 ))
-  local s=$(( total % 60 ))
+  local h=$((total / 3600))
+  local m=$(((total % 3600) / 60))
+  local s=$((total % 60))
 
-  if (( h > 0 )); then
+  if ((h > 0)); then
     printf "%dh %dm %ds" $h $m $s
-  elif (( m > 0 )); then
+  elif ((m > 0)); then
     printf "%dm %ds" $m $s
   else
     printf "%ds" $s
   fi
 }
 
+# Hook: Triggers BEFORE a command executes
 preexec_track_metrics() {
   # 1. Capture the command being executed
   local cmd="$1"
@@ -33,7 +41,7 @@ preexec_track_metrics() {
   fi
 }
 
-
+# Hook: Triggers AFTER a command finishes
 precmd_track_metrics() {
   local local_repo="$(get_local_repo)"
   local exit_code=$?
@@ -47,7 +55,7 @@ precmd_track_metrics() {
   # If _TRACK_CMD exists, it means the previous command was tracked
   if [[ -n "$_TRACK_CMD" && -n "$_STEP_START" ]]; then
     local end_step=$EPOCHREALTIME
-    local duration_raw=$(( end_step - _STEP_START ))
+    local duration_raw=$((end_step - _STEP_START))
     local duration_pretty=$(format_time $duration_raw)
 
     # Check status of the previous command
@@ -59,16 +67,17 @@ precmd_track_metrics() {
     local -a table_headers=("TIMESTAMP" "COMMAND" "STATUS" "DURATION" "REPO")
 
     local header=$(printf "$table_columns" "${table_headers[@]}")
+    local separator=$(printf '=%.0s' {1..140})
 
     if [[ ! -f "$LOG_FILE" ]]; then
-      echo "$header" > "$LOG_FILE"
-      echo "--------------------------------------------------------------------------" >> "$LOG_FILE"
+      echo "$header" >"$LOG_FILE"
+      echo "$separator" >>"$LOG_FILE"
 
     elif [[ "$(head -n 1 "$LOG_FILE")" != "$header" ]]; then
       local temp_log=$(mktemp)
-      echo "$header" > "$temp_log"
-      echo "--------------------------------------------------------------------------" >> "$temp_log"
-      cat "$LOG_FILE" >> "$temp_log"
+      echo "$header" >"$temp_log"
+      echo "$separator" >>"$temp_log"
+      cat "$LOG_FILE" >>"$temp_log"
       mv "$temp_log" "$LOG_FILE"
     fi
 
@@ -79,7 +88,7 @@ precmd_track_metrics() {
       "$display_cmd" \
       "$cmd_status" \
       "$duration_pretty" \
-      "$local_repo">> "$LOG_FILE"
+      "$local_repo" >>"$LOG_FILE"
 
     unset _TRACK_CMD
     unset _STEP_START
@@ -119,7 +128,8 @@ get_local_repo() {
   return 0
 }
 
-
+#
+# Registration: Attach functions to Zsh execution hooks
 autoload -Uz add-zsh-hook
 add-zsh-hook preexec preexec_track_metrics
 add-zsh-hook precmd precmd_track_metrics
