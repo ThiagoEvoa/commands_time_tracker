@@ -23,7 +23,7 @@ You can restrict the tracker to only log commands executed within a specific rep
 
 ```bash
 # Only track commands when the terminal path is in a specific repo within the array.
-export TIME_TRACK_REPOS=("git@github.com:yourname/" "git@gitlab.company.com:project/")
+export TIME_TRACKER_REPOS=("https://github.com" "git@github.com")
 ```
 
 ## Configuration
