@@ -34,9 +34,10 @@ fi
 # Rotate Logs: Archive current metrics to the daily summary file
 cp "$LOG_FILE" "$SUMMARY_FILE"
 
-# Reset: Overwrite the active log file with the header to prepare for a new day
-echo "TIMESTAMP           | COMMAND                        | STATUS  | DURATION" > "$LOG_FILE"
-echo "--------------------------------------------------------------------------" >> "$LOG_FILE"
+# --- Reset: Overwrite with the exact Header and Separator used in the main tracker ---
+# Define the format to match the Zsh tracking script
+TABLE_COLS="| %-19s | %-30s | %-7s | %8s | %-60s |\n"
 
-echo "✅ Summary created: $SUMMARY_FILE"
-echo "🧹 $LOG_FILE has been cleared."
+printf "$TABLE_COLS" "TIMESTAMP" "COMMAND" "STATUS" "DURATION" "REPO" > "$LOG_FILE"
+printf '=%.0s' {1..130} >> "$LOG_FILE"
+echo "" >> "$LOG_FILE" # Newline for cleanliness
