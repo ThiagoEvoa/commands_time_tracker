@@ -1,17 +1,30 @@
 # ==============================================================================
 # Zsh Command Tracking Script
-# Logs execution duration and success/failure status of development commands
-# to a specified file.
+# 
+# DESCRIPTION:
+# Automatically logs the execution duration and status of dev commands (e.g., 
+# flutter, gradle) to a local file for productivity analysis.
+#
+# FLOW:
+# 
+#
+# 1. preexec: Captures start time and validates command scope.
+# 2. precmd: Calculates duration, checks success, and persists to log.
+#
+# REQUIREMENTS:
+# - Set $TIME_TRACK_REPOS array in .zshrc to enable repo-specific tracking.
 # ==============================================================================
 
-zmodload zsh/datetime # Required for high-precision time tracking
+zmodload zsh/datetime 
 
 LOG_FILE="$HOME/track_build_metrics.txt"
 DATE_FORMAT="%Y-%m-%d %H:%M:%S"
 
-# Converts raw float duration (seconds) into human-readable HHh MMm SSs
+# --- HELPER FUNCTIONS ---
+
+# Step 1: Format float duration (seconds) into human-readable string.
 format_time() {
-  local -i total=$(($1 + 0.5))
+  local -i total=$(($1 + 0.5)) # Round up to nearest second
 
   local h=$((total / 3600))
   local m=$(((total % 3600) / 60))
@@ -26,53 +39,55 @@ format_time() {
   fi
 }
 
-# Hook: Triggers BEFORE a command executes
+# Step 2: Zsh 'preexec' hook logic.
+# Triggered by shell immediately after user hits Enter but before command runs.
 preexec_track_metrics() {
-  # 1. Capture the command being executed
   local cmd="$1"
 
-  # 2. Filter: Only proceed if it contains keywords
-  if [[ "$cmd" =~ (flutter|dart|make|pod|gradle|cache) ]]; then
+  # Filter: Only track commands relevant to build/CI tasks to reduce log noise.
+  if [[ "$cmd" =~ (flutter|dart|make|pod|gradle|cache|npm|node|nuget) ]]; then
     _TRACK_CMD="$cmd"
-    _STEP_START=$EPOCHREALTIME
+    _STEP_START=$EPOCHREALTIME # Capture start time with high precision
   else
     unset _TRACK_CMD
     unset _STEP_START
   fi
 }
 
-# Hook: Triggers AFTER a command finishes
+# Step 3: Zsh 'precmd' hook logic.
+# Triggered by shell just before the prompt is displayed (command finished).
 precmd_track_metrics() {
   local local_repo="$(get_local_repo)"
   local exit_code=$?
 
+  # Stop if not inside a tracked repo
   if [[ $local_repo == "" ]]; then
     unset _TRACK_CMD
     unset _STEP_START
     return
   fi
 
-  # If _TRACK_CMD exists, it means the previous command was tracked
+  # Proceed only if the command was captured by the 'preexec' filter
   if [[ -n "$_TRACK_CMD" && -n "$_STEP_START" ]]; then
     local end_step=$EPOCHREALTIME
     local duration_raw=$((end_step - _STEP_START))
     local duration_pretty=$(format_time $duration_raw)
 
-    # Check status of the previous command
+    # Determine command outcome
     local cmd_status="SUCCESS"
     [[ $exit_code -ne 0 ]] && cmd_status="FAILED"
 
-    # Ensure header exists
+    # Step 4: Manage log file formatting
     local table_columns="| %-19s | %-30s | %-7s | %8s | %-60s |\n"
     local -a table_headers=("TIMESTAMP" "COMMAND" "STATUS" "DURATION" "REPO")
 
     local header=$(printf "$table_columns" "${table_headers[@]}")
     local separator=$(printf '=%.0s' {1..130})
 
+    # Initialize log or ensure header is at the top
     if [[ ! -f "$LOG_FILE" ]]; then
       echo "$header" >"$LOG_FILE"
       echo "$separator" >>"$LOG_FILE"
-
     elif [[ "$(head -n 1 "$LOG_FILE")" != "$header" ]]; then
       local temp_log=$(mktemp)
       echo "$header" >"$temp_log"
@@ -81,8 +96,8 @@ precmd_track_metrics() {
       mv "$temp_log" "$LOG_FILE"
     fi
 
+    # Append metrics to log file
     local display_cmd=${_TRACK_CMD:0:30}
-
     printf "$table_columns" \
       "$(date +"$DATE_FORMAT")" \
       "$display_cmd" \
@@ -90,14 +105,17 @@ precmd_track_metrics() {
       "$duration_pretty" \
       "$local_repo" >>"$LOG_FILE"
 
+    # Cleanup temporary tracking variables
     unset _TRACK_CMD
     unset _STEP_START
   fi
 }
 
+# --- REPOSITORY UTILS ---
+
+# Checks if current working directory is a Git repository
 is_path_inside_repo() {
   local path="$PWD"
-
   while [ "$path" != "/" ]; do
     if [ -d "$path/.git" ]; then
       return 0
@@ -105,9 +123,9 @@ is_path_inside_repo() {
     path="${path:h}"
   done
   return 1
-
 }
 
+# Fetches remote origin URL to filter based on $TIME_TRACK_REPOS
 get_repo_url() {
   git config --get remote.origin.url
 }
@@ -128,8 +146,8 @@ get_local_repo() {
   return 0
 }
 
-#
-# Registration: Attach functions to Zsh execution hooks
+# --- REGISTRATION ---
+# Attach functions to native Zsh execution hooks
 autoload -Uz add-zsh-hook
 add-zsh-hook preexec preexec_track_metrics
 add-zsh-hook precmd precmd_track_metrics
