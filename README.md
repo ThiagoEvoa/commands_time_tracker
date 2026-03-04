@@ -15,6 +15,9 @@ To start tracking your commands, add the following line to your `.zshrc`:
 
 ```bash
 source $(brew --prefix commands-time-tracker)/share/commands-time-tracker/time_tracker.sh
+
+# add all the repos here: e.g. https://github.com/ and/or git@github.com/
+export TK_REPOS=("https://..." "git@...")
 ```
 
 Directory Filtering (Optional)
@@ -27,6 +30,7 @@ export TRACK_FOLDER="my-project-name"
 ```
 
 ## Configuration
+
 The tool supports automatic generation of weekly summaries. You can enable this by adding a cron job to your system.
 
 Enable Automated Summaries
@@ -42,6 +46,7 @@ Run the following command to schedule a summary every 12 hours:
 Use the `summarize` command to view your time tracking summary.
 
 ## Uninstall Automation
+
 To remove the scheduled cron job, run:
 
 ```bash
