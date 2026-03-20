@@ -25,7 +25,8 @@ fi
 
 zmodload zsh/datetime 
 
-LOG_FILE="$HOME/track_build_metrics.txt"
+HOME="${HOME:-$(eval echo ~)}"
+LOG_FILE="${TRACK_BUILD_METRICS_FILE:-$HOME/track_build_metrics.txt}"
 DATE_FORMAT="%Y-%m-%d %H:%M:%S"
 
 # --- HELPER FUNCTIONS ---

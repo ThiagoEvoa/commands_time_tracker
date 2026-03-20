@@ -10,8 +10,9 @@
 #   ./summarize.sh --uninstall # Removes associated cron jobs
 # ==============================================================================
 
-LOG_FILE="$HOME/track_build_metrics.txt"
-SUMMARY_DIR="$HOME/summaries"
+HOME="${HOME:-$(eval echo ~)}"
+LOG_FILE="${TRACK_BUILD_METRICS_FILE:-$HOME/track_build_metrics.txt}"
+SUMMARY_DIR="${TRACK_BUILD_SUMMARIES_DIR:-$HOME/summaries}"
 
 # Ensure the archive directory exists
 mkdir -p "$SUMMARY_DIR"
@@ -24,6 +25,9 @@ if [[ "$1" == "--uninstall" ]]; then
     echo "✅ Cron job removed successfully."
     exit 0
 fi
+
+# Debug: cron may not have HOME set; log location should be explicit
+echo "💡 summarize running with HOME=$HOME, LOG_FILE=$LOG_FILE, SUMMARY_FILE=$SUMMARY_FILE"
 
 # Validation: Skip if log doesn't exist or contains only headers (<= 2 lines)
 if [[ ! -f "$LOG_FILE" ]] || [[ $(wc -l < "$LOG_FILE") -le 2 ]]; then
