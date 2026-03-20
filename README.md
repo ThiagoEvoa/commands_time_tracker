@@ -21,11 +21,9 @@ Directory Filtering (Optional)
 
 You can restrict the tracker to only log commands executed within a specific repository. Add the following environment variable to your .zshrc:
 
-eg: export TIME_TRACK_REPOS=("git@github.com:yourname/" "git@gitlab.company.com:project/")
-
 ```bash
 # Only track commands when the terminal path is in a specific repo within the array.
-export TIME_TRACK_REPOS="my-project-name"
+export TIME_TRACK_REPOS=("git@github.com:yourname/" "git@gitlab.company.com:project/")
 ```
 
 ## Configuration

@@ -15,9 +15,18 @@
 # - Set $TIME_TRACK_REPOS array in .zshrc to enable repo-specific tracking.
 # ==============================================================================
 
+# --- VALIDATION BLOCK ---
+# Check if the required configuration array is present and non-empty.
+if [[ -z "${TIME_TRACK_REPOS[@]}" ]]; then
+  echo "TRACKING SCRIPT ERROR: 'TIME_TRACK_REPOS' array is not defined or is empty."
+  echo "Please check your .zshrc and ensure: export TIME_TRACK_REPOS=('url1' 'url2')"
+  return 1
+fi
+
 zmodload zsh/datetime 
 
-LOG_FILE="$HOME/track_build_metrics.txt"
+HOME="${HOME:-$(eval echo ~)}"
+LOG_FILE="${TRACK_BUILD_METRICS_FILE:-$HOME/track_build_metrics.txt}"
 DATE_FORMAT="%Y-%m-%d %H:%M:%S"
 
 # --- HELPER FUNCTIONS ---
@@ -131,19 +140,25 @@ get_repo_url() {
 }
 
 get_local_repo() {
-  local local_repo=""
-  if is_path_inside_repo; then
-    local repourl=$(get_repo_url)
-    if [[ -n "$TIME_TRACK_REPOS" ]]; then
-      for repo in ${[TIME_TRACK_REPOS@]}; do
-        if [[ "$repourl" == "$repo"* ]]; then
-          echo "$repourl"
-          return 0
-        fi
-      done
-    fi
+  if ! is_path_inside_repo; then
+    return 1
   fi
-  return 0
+
+  local repourl=$(get_repo_url)
+  
+  # Ensure we are using the correct variable name
+  # We use the explicit array expansion syntax here:
+  if [[ -n "${TIME_TRACK_REPOS}" ]]; then
+    for repo in "${TIME_TRACK_REPOS[@]}"; do
+      # Use quotes around strings to prevent Zsh from interpreting 
+      # characters like / or : as math operators
+      if [[ "$repourl" == "$repo"* ]]; then
+        echo "$repourl"
+        return 0
+      fi
+    done
+  fi
+  return 1
 }
 
 # --- REGISTRATION ---
