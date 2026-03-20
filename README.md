@@ -13,33 +13,24 @@ brew install commands-time-tracker
 
 To start tracking your commands, add the following line to your `.zshrc`:
 
-```bash
-source $(brew --prefix commands-time-tracker)/share/commands-time-tracker/time_tracker.sh
-```
-
-Directory Filtering (Optional)
-
 You can restrict the tracker to only log commands executed within a specific repository. Add the following environment variable to your .zshrc:
 
 ```bash
 # Only track commands when the terminal path is in a specific repo within the array.
-export TIME_TRACK_REPOS=("git@github.com:yourname/" "git@gitlab.company.com:project/")
+export TIME_TRACK_REPOS=("https://github.com" "git@github.com")
 ```
 
-## Configuration
-The tool supports automatic generation of weekly summaries. You can enable this by adding a cron job to your system.
+```bash
+source $(brew --prefix commands-time-tracker)/share/commands-time-tracker/time_tracker.sh
+```
 
-Enable Automated Summaries
+The tool supports automatic generation of weekly summaries. You can enable this by adding a cron job to your system.
 
 Run the following command to schedule a summary every 12 hours:
 
 ```bash
 (crontab -l 2>/dev/null; echo "0 */12 * * * $(brew --prefix)/bin/summarize >> ~/summarizer.log 2>&1") | crontab -
 ```
-
-## Usage
-
-Use the `summarize` command to view your time tracking summary.
 
 ## Uninstall Automation
 To remove the scheduled cron job, run:
